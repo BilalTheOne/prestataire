@@ -1,13 +1,37 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Phone, FileText, MapPin, CheckCircle, FileText as FileIcon, ClipboardList, Activity, CheckSquare, File, FileText as DocumentIcon, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Search,
+  Phone,
+  FileText,
+  MapPin,
+  CheckCircle,
+  FileText as FileIcon,
+  ClipboardList,
+  Activity,
+  CheckSquare,
+  File,
+  FileText as DocumentIcon,
+  Clock,
+  DollarSign,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Eye,
+} from "lucide-react";
 
 export default function InterventionList() {
   const [search, setSearch] = useState("");
   const [activeLink, setActiveLink] = useState("intervention");
   const [showStats, setShowStats] = useState(false);
   const [showLinks, setShowLinks] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [interventionStatuses, setInterventionStatuses] = useState(
+    Array(6).fill("not-yet") // Initial status of all interventions is "not-yet"
+  );
   const router = useRouter();
 
   // Dummy data for interventions
@@ -18,6 +42,7 @@ export default function InterventionList() {
     phone: "065252525",
     address: "Tanger casablanca, maroc , 0202020",
     description: "c'est la description du problème, ça doit contenir un text long et détaile",
+    price: "250",
   });
 
   const links = [
@@ -25,7 +50,7 @@ export default function InterventionList() {
     { name: "Facture", icon: FileIcon, key: "facture" },
     { name: "Mes documents", icon: ClipboardList, key: "documents" },
   ];
-  
+
   const handleLinkClick = (link) => {
     setActiveLink(link.key);
     setShowLinks(false);
@@ -34,6 +59,41 @@ export default function InterventionList() {
     }
     if (link.key === "documents") {
       router.push("/docs");
+    }
+  };
+
+  const openPopup = (intervention, index) => {
+    setSelectedIntervention({ item: intervention, index });
+    setShowPopup(true);
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
+    setSelectedIntervention(null);
+  };
+
+  const acceptIntervention = (index) => {
+    const newStatuses = [...interventionStatuses];
+    newStatuses[index] = "accepted";
+    setInterventionStatuses(newStatuses);
+    closePopup();
+  };
+
+  const refuseIntervention = (index) => {
+    const newStatuses = [...interventionStatuses];
+    newStatuses[index] = "refused";
+    setInterventionStatuses(newStatuses);
+    closePopup();
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "accepted":
+        return "bg-green-100";
+      case "refused":
+        return "bg-red-100";
+      default:
+        return "bg-blue-100";
     }
   };
 
@@ -127,10 +187,15 @@ export default function InterventionList() {
         {/* Interventions List */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {interventions.map((item, index) => (
-            <div key={index} className="bg-white p-4 shadow-md rounded-lg border border-gray-200">
-              <div className="flex justify-between text-sm text-gray-500 border-b pb-2 mb-2">
-                <span>{item.id}</span>
-                <span>{item.date}</span>
+            <div key={index} className="bg-white p-4 shadow-md rounded-lg border border-gray-200 text-left w-full">
+              <div className={`flex justify-between items-center p-2 rounded-t-lg ${getStatusColor(interventionStatuses[index])}`}>
+                <div className="text-sm text-gray-500">
+                  <span>{item.id}</span>
+                  <span className="block">{item.date}</span>
+                </div>
+                <button onClick={() => openPopup(item, index)} className="text-blue-500 hover:text-blue-700">
+                  <Eye className="w-5 h-5" />
+                </button>
               </div>
               <h4 className="font-semibold text-lg mt-2 text-[#333]">{item.name}</h4>
               <div className="mt-2 text-gray-600 text-sm">
@@ -151,6 +216,64 @@ export default function InterventionList() {
           ))}
         </div>
       </div>
+
+      {/* Popup */}
+      {showPopup && selectedIntervention && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full relative">
+            <button
+              onClick={closePopup}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col items-center">
+              <img
+                src="https://symbols.getvecta.com/stencil_34/21_female-factory-worker.7052c847e3.svg"
+                alt="Profile"
+                className="w-20 h-20 rounded-full border-4 border-white shadow-md mb-4"
+              />
+              <h4 className="font-semibold text-lg text-[#333] mb-4">Accepter l'ordre de service</h4>
+            </div>
+            <div className="text-sm text-gray-600">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-blue-500" />
+                <span>{selectedIntervention.item.date}</span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-blue-500" />
+                <span>Heure: {selectedIntervention.item.date.split(" à ")[1]}</span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="w-4 h-4 text-blue-500" />
+                <span>Zipcode: 232323</span>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-blue-500" />
+                <p className="text-gray-600">{selectedIntervention.item.description}</p>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4 text-blue-500" />
+                <span>Prix annoncé: {selectedIntervention.item.price}</span>
+              </div>
+            </div>
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={() => acceptIntervention(selectedIntervention.index)}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+                Accepter
+              </button>
+              <button
+                onClick={() => refuseIntervention(selectedIntervention.index)}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg"
+              >
+                Refuser
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
